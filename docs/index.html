@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoundRoute</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fafafa;
+  --fg: #111;
+  --muted: #555;
+  --accent: #4FA8FF;
+  --card: #fff;
+  --border: rgba(0,0,0,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1424;
+    --fg: #f1f5f9;
+    --muted: #94a3b8;
+    --card: #15263f;
+    --border: rgba(255,255,255,0.08);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.6;
+}
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+header img {
+  width: 80px;
+  height: 80px;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+h1 { font-size: 36px; margin: 0; letter-spacing: -0.02em; }
+.tag { color: var(--muted); margin: 4px 0 0; }
+.cards {
+  display: grid;
+  gap: 16px;
+  margin-top: 32px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card h2 { margin: 0 0 4px; font-size: 18px; }
+.card p { margin: 0; color: var(--muted); font-size: 14px; }
+footer {
+  margin-top: 48px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icon.png" alt="SoundRoute icon">
+    <div>
+      <h1>SoundRoute</h1>
+      <p class="tag">Route audio between any two devices on your Mac.</p>
+    </div>
+  </header>
+
+  <p>SoundRoute is a lightweight macOS menu bar utility that pipes audio from any input device (microphone, line-in, USB interface) to any output device (speakers, headphones, virtual outputs). Pick an input, pick an output, hit Start.</p>
+
+  <div class="cards">
+    <a class="card" href="privacy.html">
+      <h2>Privacy Policy</h2>
+      <p>What SoundRoute collects (nothing) and what it sends (also nothing).</p>
+    </a>
+    <a class="card" href="support.html">
+      <h2>Support</h2>
+      <p>How to report issues, ask questions, or request features.</p>
+    </a>
+    <a class="card" href="https://github.com/bscoggins/SoundRoute">
+      <h2>Source on GitHub</h2>
+      <p>github.com/bscoggins/SoundRoute</p>
+    </a>
+  </div>
+
+  <footer>
+    <p>Copyright © 2026 Michael Brent Scoggins. All rights reserved.</p>
+  </footer>
+</div>
+</body>
+</html>

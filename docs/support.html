@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoundRoute — Support</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fafafa;
+  --fg: #111;
+  --muted: #555;
+  --accent: #4FA8FF;
+  --card: #fff;
+  --border: rgba(0,0,0,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1424;
+    --fg: #f1f5f9;
+    --muted: #94a3b8;
+    --card: #15263f;
+    --border: rgba(255,255,255,0.08);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.65;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 64px; }
+.crumb { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+.crumb a { color: var(--accent); text-decoration: none; }
+h1 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 24px; }
+h2 { font-size: 20px; margin-top: 32px; }
+.cta {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+.cta:hover { filter: brightness(1.05); }
+ul { padding-left: 22px; }
+li { margin-bottom: 8px; }
+code { background: var(--card); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-size: 0.95em; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← SoundRoute</a></p>
+  <h1>Support</h1>
+
+  <p>The fastest way to get help, report a bug, or request a feature is to open an issue on GitHub.</p>
+
+  <p><a class="cta" href="https://github.com/bscoggins/SoundRoute/issues/new">Open an Issue on GitHub</a></p>
+
+  <h2>Before filing a bug</h2>
+  <p>It speeds things up enormously if you include:</p>
+  <ul>
+    <li>macOS version (Apple menu → About This Mac)</li>
+    <li>Mac model (e.g. "M2 MacBook Air")</li>
+    <li>SoundRoute version (it's in the menu bar popover, or check About in the menu)</li>
+    <li>Which input and output devices were selected when the issue happened</li>
+    <li>What you expected and what actually happened</li>
+  </ul>
+
+  <h2>Common questions</h2>
+
+  <h3>Why is there no audio coming through?</h3>
+  <ul>
+    <li>Make sure both an input and output device are selected, then click <strong>Start Routing</strong>.</li>
+    <li>Check that the output device's volume isn't muted in System Settings → Sound.</li>
+    <li>If your input device is a microphone, macOS may have prompted you to grant microphone permission. You can change that in System Settings → Privacy &amp; Security → Microphone.</li>
+  </ul>
+
+  <h3>The audio sounds choppy or stuttery</h3>
+  <ul>
+    <li>Try stopping routing, switching to a different output device, then switching back.</li>
+    <li>Heavy CPU load on your Mac (large compiles, video rendering, etc.) can cause occasional dropouts.</li>
+  </ul>
+
+  <h3>The icon doesn't appear in my menu bar</h3>
+  <ul>
+    <li>If you have a menu bar manager (Bartender, Hidden Bar, etc.) the icon may be hidden. Check the overflow.</li>
+    <li>If the menu bar is full, macOS may hide some items. Try removing one or two.</li>
+  </ul>
+
+  <h3>Can I have it launch automatically?</h3>
+  <p>Yes — open the menu bar popover and check <strong>Launch at login</strong>.</p>
+
+  <footer>
+    <p>Copyright © 2026 Michael Brent Scoggins. All rights reserved.</p>
+  </footer>
+</div>
+</body>
+</html>

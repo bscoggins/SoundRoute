@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoundRoute — Privacy Policy</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fafafa;
+  --fg: #111;
+  --muted: #555;
+  --accent: #4FA8FF;
+  --card: #fff;
+  --border: rgba(0,0,0,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1424;
+    --fg: #f1f5f9;
+    --muted: #94a3b8;
+    --card: #15263f;
+    --border: rgba(255,255,255,0.08);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.65;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 64px; }
+.crumb { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+.crumb a { color: var(--accent); text-decoration: none; }
+h1 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 4px; }
+.updated { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
+h2 { font-size: 20px; margin-top: 32px; }
+p, ul { color: var(--fg); }
+li { margin-bottom: 6px; }
+code { background: var(--card); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-size: 0.95em; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← SoundRoute</a></p>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: April 28, 2026</p>
+
+  <p>SoundRoute is built so the answer to "what data do you collect?" can be a single word: <strong>none</strong>. This page describes that in more detail.</p>
+
+  <h2>What SoundRoute does</h2>
+  <p>SoundRoute is a macOS menu bar utility that routes audio from one device on your Mac to another. Audio passes through your computer's CoreAudio system in real time. It is never recorded, written to disk, or transmitted off your computer.</p>
+
+  <h2>Data we collect</h2>
+  <p>None. SoundRoute has no analytics, no telemetry, no crash reporting, no advertising, no user accounts, and no servers we operate. The app does not make any network connections.</p>
+
+  <h2>Microphone access</h2>
+  <p>macOS will prompt you to grant SoundRoute permission to use the microphone the first time you start audio routing from an input device. This permission is required so that audio from your selected input device can be passed through to your selected output device. The audio is processed only in memory and only for as long as you have routing active. SoundRoute does not record, save, or transmit any audio.</p>
+
+  <h2>Data stored on your device</h2>
+  <p>SoundRoute saves a small amount of preference data on your Mac (using the standard <code>UserDefaults</code> system) so it can remember your choices between launches:</p>
+  <ul>
+    <li>Which input and output devices you last selected (stored as system-assigned device identifiers)</li>
+    <li>Whether you have enabled "Show Dock icon"</li>
+    <li>Whether you have enabled "Launch at login"</li>
+  </ul>
+  <p>This data lives only on your Mac and is never sent anywhere. Removing the app removes this data.</p>
+
+  <h2>Children's privacy</h2>
+  <p>SoundRoute does not knowingly collect any data from anyone, including children under 13.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy ever changes, the updated version will be posted at this same URL with a new "Last updated" date.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy can be filed as an issue on the SoundRoute GitHub repository: <a href="https://github.com/bscoggins/SoundRoute/issues">github.com/bscoggins/SoundRoute/issues</a></p>
+
+  <footer>
+    <p>Copyright © 2026 Michael Brent Scoggins. All rights reserved.</p>
+  </footer>
+</div>
+</body>
+</html>
