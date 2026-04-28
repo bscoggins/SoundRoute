@@ -60,3 +60,13 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# macOS
+.DS_Store
+
+# Build outputs
+build/
+DerivedData/
+
+# Claude Code project memory (local-only)
+.claude/

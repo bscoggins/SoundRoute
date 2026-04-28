@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1F3858"/>
+      <stop offset="1" stop-color="#0A1A2E"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8FD3FF"/>
+      <stop offset="1" stop-color="#3D8FE2"/>
+    </linearGradient>
+    <linearGradient id="arrowFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E6F2FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="225" fill="url(#bg)"/>
+
+  <!-- Waveform: echo (dim) bars to the LEFT of each main bar -->
+  <g fill="url(#accent)" fill-opacity="0.4">
+    <rect x="104" y="442" width="14" height="140" rx="7"/>
+    <rect x="162" y="382" width="14" height="260" rx="7"/>
+    <rect x="220" y="322" width="14" height="380" rx="7"/>
+    <rect x="278" y="382" width="14" height="260" rx="7"/>
+    <rect x="336" y="442" width="14" height="140" rx="7"/>
+  </g>
+
+  <!-- Waveform: main bright bars -->
+  <g fill="url(#accent)">
+    <rect x="120" y="412" width="28" height="200" rx="14"/>
+    <rect x="178" y="352" width="28" height="320" rx="14"/>
+    <rect x="236" y="292" width="28" height="440" rx="14"/>
+    <rect x="294" y="352" width="28" height="320" rx="14"/>
+    <rect x="352" y="412" width="28" height="200" rx="14"/>
+  </g>
+
+  <!-- Arrow: white, line connects directly to triangle base -->
+  <g fill="url(#arrowFill)">
+    <rect x="430" y="497" width="130" height="30" rx="6"/>
+    <polygon points="560,460 560,564 620,512"/>
+  </g>
+
+  <!-- Headphones -->
+  <g>
+    <!-- Outer band -->
+    <path d="M 680 510 C 680 360, 920 360, 920 510"
+          fill="none" stroke="url(#accent)" stroke-width="34" stroke-linecap="round"/>
+    <!-- Inner highlight band -->
+    <path d="M 690 506 C 696 388, 904 388, 910 506"
+          fill="none" stroke="#B6E1FF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/>
+    <!-- Earpieces -->
+    <rect x="652" y="510" width="56" height="140" rx="22" fill="url(#accent)"/>
+    <rect x="892" y="510" width="56" height="140" rx="22" fill="url(#accent)"/>
+    <!-- Earpiece top accent (lighter cap) -->
+    <rect x="652" y="510" width="56" height="32" rx="16" fill="#B6E1FF" fill-opacity="0.45"/>
+    <rect x="892" y="510" width="56" height="32" rx="16" fill="#B6E1FF" fill-opacity="0.45"/>
+  </g>
+</svg>
