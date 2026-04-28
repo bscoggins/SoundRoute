@@ -39,11 +39,21 @@ struct ContentView: View {
             actionButton
 
             if let error = audioManager.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                VStack(spacing: 6) {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    if audioManager.isMicrophoneDenied {
+                        Button("Open System Settings") {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .controlSize(.small)
+                    }
+                }
             }
 
             Divider()
@@ -189,6 +199,7 @@ struct ContentView: View {
                 .controlSize(.small)
 
             HStack {
+                helpMenu
                 Spacer()
                 Button {
                     NSApp.terminate(nil)
@@ -198,12 +209,34 @@ struct ContentView: View {
                 .buttonStyle(.borderless)
                 .controlSize(.small)
                 .keyboardShortcut("q")
-                Spacer()
             }
             .padding(.top, 2)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
+    }
+
+    private var helpMenu: some View {
+        Menu {
+            Button("About SoundRoute") {
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.orderFrontStandardAboutPanel(options: [
+                    NSApplication.AboutPanelOptionKey.applicationName: "SoundRoute"
+                ])
+            }
+            Divider()
+            Link("Privacy Policy",
+                 destination: URL(string: "https://bscoggins.github.io/SoundRoute/privacy.html")!)
+            Link("Support",
+                 destination: URL(string: "https://bscoggins.github.io/SoundRoute/support.html")!)
+            Link("View on GitHub",
+                 destination: URL(string: "https://github.com/bscoggins/SoundRoute")!)
+        } label: {
+            Label("Help", systemImage: "questionmark.circle")
+        }
+        .menuStyle(.borderlessButton)
+        .controlSize(.small)
+        .fixedSize()
     }
 
     private var statusText: String {

@@ -2,11 +2,13 @@ import Foundation
 import AudioToolbox
 import CoreAudio
 import AppKit
+import AVFoundation
 import os
 
 class AudioManager: ObservableObject {
     @Published var isRunning = false
     @Published var errorMessage: String?
+    @Published var isMicrophoneDenied = false
 
     private var inputDeviceID: AudioDeviceID?
     private var outputDeviceID: AudioDeviceID?
@@ -63,8 +65,36 @@ class AudioManager: ObservableObject {
             return
         }
 
+        // Mic permission gates audio input. Detect explicitly so we can show
+        // a useful message + Open-Settings affordance instead of an opaque
+        // OSStatus when the user has previously denied.
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            break
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        self?.start()
+                    } else {
+                        self?.isMicrophoneDenied = true
+                        self?.errorMessage = "SoundRoute needs microphone access to read from input devices."
+                    }
+                }
+            }
+            return
+        case .denied, .restricted:
+            isMicrophoneDenied = true
+            errorMessage = "Microphone access is off. Open System Settings to grant SoundRoute access."
+            return
+        @unknown default:
+            errorMessage = "Microphone permission state is unknown."
+            return
+        }
+
         stop()
         errorMessage = nil
+        isMicrophoneDenied = false
 
         // Hardcoded to 48 kHz stereo non-interleaved float. The HAL Output
         // unit handles sample-rate and channel-count conversion to/from the
