@@ -47,7 +47,10 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                     if audioManager.isMicrophoneDenied {
                         Button("Open System Settings") {
-                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                            // Modern System Settings URL on macOS 14+; the
+                            // ?Privacy_Microphone anchor scrolls to the mic
+                            // subsection on launch.
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Microphone") {
                                 NSWorkspace.shared.open(url)
                             }
                         }
