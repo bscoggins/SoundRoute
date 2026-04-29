@@ -8,6 +8,12 @@ No drivers. No aggregate devices. No Audio MIDI Setup.
   <img src="docs/icon.png" width="128" alt="SoundRoute icon">
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/01-running.png" width="32%" alt="Lives in your menu bar">
+  <img src="docs/screenshots/02-ready.png" width="32%" alt="Pick. Pick. Play.">
+  <img src="docs/screenshots/03-picker.png" width="32%" alt="Every device.">
+</p>
+
 ## Why
 
 macOS doesn't have a built-in way to send a specific input device to a specific output device without setting up an aggregate device or wrestling with a virtual audio kext. SoundRoute does exactly that, in two clicks, from the menu bar.
