@@ -117,7 +117,39 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .focusEffectDisabled()
             .help("Refresh devices")
+
+            helpMenu
         }
+    }
+
+    private var helpMenu: some View {
+        Menu {
+            Button("About SoundRoute") {
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.orderFrontStandardAboutPanel(options: [
+                    NSApplication.AboutPanelOptionKey.applicationName: "SoundRoute"
+                ])
+            }
+            Divider()
+            Link("Privacy Policy",
+                 destination: URL(string: "https://bscoggins.github.io/SoundRoute/privacy.html")!)
+            Link("Support",
+                 destination: URL(string: "https://bscoggins.github.io/SoundRoute/support.html")!)
+            Link("View on GitHub",
+                 destination: URL(string: "https://github.com/bscoggins/SoundRoute")!)
+        } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 12, weight: .medium))
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .focusEffectDisabled()
+        .fixedSize()
+        .tint(.secondary)
+        .foregroundStyle(.secondary)
+        .help("Help")
     }
 
     private func devicePicker(
@@ -199,7 +231,6 @@ struct ContentView: View {
                 .controlSize(.small)
 
             HStack {
-                helpMenu
                 Spacer()
                 Button {
                     NSApp.terminate(nil)
@@ -214,29 +245,6 @@ struct ContentView: View {
         }
         .font(.caption)
         .foregroundStyle(.secondary)
-    }
-
-    private var helpMenu: some View {
-        Menu {
-            Button("About SoundRoute") {
-                NSApp.activate(ignoringOtherApps: true)
-                NSApp.orderFrontStandardAboutPanel(options: [
-                    NSApplication.AboutPanelOptionKey.applicationName: "SoundRoute"
-                ])
-            }
-            Divider()
-            Link("Privacy Policy",
-                 destination: URL(string: "https://bscoggins.github.io/SoundRoute/privacy.html")!)
-            Link("Support",
-                 destination: URL(string: "https://bscoggins.github.io/SoundRoute/support.html")!)
-            Link("View on GitHub",
-                 destination: URL(string: "https://github.com/bscoggins/SoundRoute")!)
-        } label: {
-            Label("Help", systemImage: "questionmark.circle")
-        }
-        .menuStyle(.borderlessButton)
-        .controlSize(.small)
-        .fixedSize()
     }
 
     private var statusText: String {
