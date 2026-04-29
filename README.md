@@ -74,4 +74,6 @@ Issues, questions, or feedback: <https://bscoggins.github.io/SoundRoute/support.
 
 ## License
 
+Source-available under a proprietary license — see [LICENSE](LICENSE). You may read, clone, and audit the source for personal use; redistribution, repackaging, and commercial use are not permitted. The official distribution is the Mac App Store.
+
 Copyright 2026 Michael Brent Scoggins. All rights reserved.
