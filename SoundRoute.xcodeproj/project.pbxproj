@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,9 +13,22 @@
 		8A1234560004 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550004 /* AudioManager.swift */; };
 		8A1234560005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A1234550005 /* Assets.xcassets */; };
 		8A1234560006 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8A1234550007 /* PrivacyInfo.xcprivacy */; };
+		8A1234560007 /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550008 /* RingBuffer.swift */; };
+		8A1234560008 /* SelectionResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550009 /* SelectionResolver.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		64C04B452FB8BFAB002F6564 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8A1234510000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A1234520000;
+			remoteInfo = SoundRoute;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		64C04B412FB8BFAB002F6564 /* SoundRouteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SoundRouteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A1234550000 /* SoundRoute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoundRoute.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A1234550001 /* SoundRouteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundRouteApp.swift; sourceTree = "<group>"; };
 		8A1234550002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -24,9 +37,22 @@
 		8A1234550005 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8A1234550006 /* SoundRoute.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SoundRoute.entitlements; sourceTree = "<group>"; };
 		8A1234550007 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8A1234550008 /* RingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBuffer.swift; sourceTree = "<group>"; };
+		8A1234550009 /* SelectionResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionResolver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		64C04B422FB8BFAB002F6564 /* SoundRouteTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SoundRouteTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		64C04B3E2FB8BFAB002F6564 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8A1234540001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -41,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				8A1234530001 /* SoundRoute */,
+				64C04B422FB8BFAB002F6564 /* SoundRouteTests */,
 				8A1234530002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -52,6 +79,8 @@
 				8A1234550002 /* ContentView.swift */,
 				8A1234550003 /* AudioDeviceManager.swift */,
 				8A1234550004 /* AudioManager.swift */,
+				8A1234550008 /* RingBuffer.swift */,
+				8A1234550009 /* SelectionResolver.swift */,
 				8A1234550005 /* Assets.xcassets */,
 				8A1234550006 /* SoundRoute.entitlements */,
 				8A1234550007 /* PrivacyInfo.xcprivacy */,
@@ -63,6 +92,7 @@
 			isa = PBXGroup;
 			children = (
 				8A1234550000 /* SoundRoute.app */,
+				64C04B412FB8BFAB002F6564 /* SoundRouteTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +100,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		64C04B402FB8BFAB002F6564 /* SoundRouteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64C04B492FB8BFAB002F6564 /* Build configuration list for PBXNativeTarget "SoundRouteTests" */;
+			buildPhases = (
+				64C04B3D2FB8BFAB002F6564 /* Sources */,
+				64C04B3E2FB8BFAB002F6564 /* Frameworks */,
+				64C04B3F2FB8BFAB002F6564 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				64C04B462FB8BFAB002F6564 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				64C04B422FB8BFAB002F6564 /* SoundRouteTests */,
+			);
+			name = SoundRouteTests;
+			packageProductDependencies = (
+			);
+			productName = SoundRouteTests;
+			productReference = 64C04B412FB8BFAB002F6564 /* SoundRouteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		8A1234520000 /* SoundRoute */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8A1234510001 /* Build configuration list for PBXNativeTarget "SoundRoute" */;
@@ -94,9 +147,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					64C04B402FB8BFAB002F6564 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 8A1234520000;
+					};
 					8A1234520000 = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -116,11 +173,19 @@
 			projectRoot = "";
 			targets = (
 				8A1234520000 /* SoundRoute */,
+				64C04B402FB8BFAB002F6564 /* SoundRouteTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		64C04B3F2FB8BFAB002F6564 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8A1234540002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -133,6 +198,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		64C04B3D2FB8BFAB002F6564 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8A1234540000 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -141,12 +213,64 @@
 				8A1234560002 /* ContentView.swift in Sources */,
 				8A1234560003 /* AudioDeviceManager.swift in Sources */,
 				8A1234560004 /* AudioManager.swift in Sources */,
+				8A1234560007 /* RingBuffer.swift in Sources */,
+				8A1234560008 /* SelectionResolver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		64C04B462FB8BFAB002F6564 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A1234520000 /* SoundRoute */;
+			targetProxy = 64C04B452FB8BFAB002F6564 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		64C04B472FB8BFAB002F6564 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NSDQ6349V7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "E-B-Enterprises.SoundRouteTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SoundRoute.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SoundRoute";
+			};
+			name = Debug;
+		};
+		64C04B482FB8BFAB002F6564 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NSDQ6349V7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "E-B-Enterprises.SoundRouteTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SoundRoute.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SoundRoute";
+			};
+			name = Release;
+		};
 		8A1234500001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -342,6 +466,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		64C04B492FB8BFAB002F6564 /* Build configuration list for PBXNativeTarget "SoundRouteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64C04B472FB8BFAB002F6564 /* Debug */,
+				64C04B482FB8BFAB002F6564 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8A1234510001 /* Build configuration list for PBXNativeTarget "SoundRoute" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -261,49 +261,34 @@ struct ContentView: View {
     }
 
     private func restoreSelections() {
-        selectedInputDevice = restoredDevice(
+        selectedInputDevice = SelectionResolver.restoredDevice(
             from: deviceManager.inputDevices,
             savedUID: savedInputUID,
             systemDefault: deviceManager.getDefaultInputDevice()
         )
-        selectedOutputDevice = restoredDevice(
+        selectedOutputDevice = SelectionResolver.restoredDevice(
             from: deviceManager.outputDevices,
             savedUID: savedOutputUID,
             systemDefault: deviceManager.getDefaultOutputDevice()
         )
     }
 
-    private func restoredDevice(
-        from devices: [AudioDevice],
-        savedUID: String,
-        systemDefault: AudioDeviceID?
-    ) -> AudioDevice? {
-        if !savedUID.isEmpty,
-           let saved = devices.first(where: { $0.uid == savedUID }) {
-            return saved
-        }
-        if let systemDefault {
-            return devices.first { $0.id == systemDefault }
-        }
-        return nil
-    }
-
-    /// Re-resolve a selection by UID after the device list changes. If the
-    /// device disappeared while routing, stop and surface a clean error.
     private func reconcileSelection(isInput: Bool) {
         let devices = isInput ? deviceManager.inputDevices : deviceManager.outputDevices
         let current = isInput ? selectedInputDevice : selectedOutputDevice
         guard let current else { return }
 
-        if let updated = devices.first(where: { $0.uid == current.uid }) {
+        switch SelectionResolver.reconcile(current: current, against: devices) {
+        case .unchanged:
+            break
+        case .updated(let refreshed):
             if isInput {
-                if updated.id != selectedInputDevice?.id { selectedInputDevice = updated }
+                selectedInputDevice = refreshed
             } else {
-                if updated.id != selectedOutputDevice?.id { selectedOutputDevice = updated }
+                selectedOutputDevice = refreshed
             }
-        } else {
-            let wasRunning = audioManager.isRunning
-            if wasRunning {
+        case .disconnected:
+            if audioManager.isRunning {
                 audioManager.stop()
                 audioManager.errorMessage = "\(current.name) was disconnected"
             }
