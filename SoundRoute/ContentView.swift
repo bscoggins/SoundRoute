@@ -47,6 +47,7 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .center)
                     if audioManager.isMicrophoneDenied {
                         Button("Open System Settings") {

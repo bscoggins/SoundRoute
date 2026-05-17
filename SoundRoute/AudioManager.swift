@@ -83,7 +83,7 @@ class AudioManager: ObservableObject {
 
         // Free-tier daily-budget gate. Unlocked users skip this entirely.
         if !isUnlockedSnapshot, let tracker = dailyUsageTracker, tracker.isLimitReached {
-            errorMessage = "Free routing time for today is used up. Unlock for unlimited routing."
+            errorMessage = "Free routing time for today is used up."
             dailyLimitReached = true
             return
         }
@@ -185,7 +185,7 @@ class AudioManager: ObservableObject {
     private func handleDailyLimitReached() {
         cleanup()
         isRunning = false
-        errorMessage = "Free routing time for today is used up. Unlock for unlimited routing."
+        errorMessage = "Free routing time for today is used up."
         dailyLimitReached = true
     }
 
@@ -195,7 +195,11 @@ class AudioManager: ObservableObject {
     /// path.
     ///
     /// - **Unlock mid-session:** stop the tracker so the newly-purchased
-    ///   session doesn't keep draining the free budget.
+    ///   session doesn't keep draining the free budget. Also clear any
+    ///   stale daily-limit error state — being unlocked means any
+    ///   "you've used up your free time" condition is obsolete by
+    ///   definition. Persistent errors (mic denial, device init failure)
+    ///   re-surface naturally on the next `start()` attempt.
     /// - **Lock mid-session (refund/revocation):** re-engage the tracker
     ///   so the free-tier daily cap takes effect. If the user is already
     ///   over the daily limit, stop routing immediately.
@@ -204,6 +208,8 @@ class AudioManager: ObservableObject {
         isUnlockedSnapshot = unlocked
         if unlocked {
             dailyUsageTracker?.stop()
+            errorMessage = nil
+            dailyLimitReached = false
         } else if wasUnlocked, isRunning {
             // Lock arrived while routing. Re-engage the tracker — if the
             // daily budget is already exhausted, this fires the limit

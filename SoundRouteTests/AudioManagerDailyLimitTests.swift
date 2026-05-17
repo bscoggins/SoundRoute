@@ -35,6 +35,32 @@ final class AudioManagerDailyLimitTests: XCTestCase {
         XCTAssertFalse(manager.dailyLimitReached)
     }
 
+    func testUnlockClearsStaleDailyLimitErrorMessage() {
+        // After hitting the daily limit, the user purchases via the
+        // paywall. The unlock event must clear the stale "free routing
+        // time used up" error message and the dailyLimitReached flag —
+        // otherwise the red error persists in the UI until the user
+        // clicks Start again. Caught in v1.1 smoke testing.
+        let tracker = DailyUsageTracker(userDefaults: defaults)
+        tracker.recordUsage(seconds: DailyUsageTracker.dailyLimitSeconds)
+
+        let manager = AudioManager()
+        manager.dailyUsageTracker = tracker
+        manager.handleUnlockStateChange(unlocked: false)
+        manager.setInputDevice(1) // dummy IDs — start hits the limit gate first
+        manager.setOutputDevice(2)
+        manager.start()
+
+        XCTAssertTrue(manager.dailyLimitReached, "Precondition: limit hit")
+        XCTAssertNotNil(manager.errorMessage, "Precondition: error message set")
+
+        // User completes purchase — view layer fires this on the unlock.
+        manager.handleUnlockStateChange(unlocked: true)
+
+        XCTAssertFalse(manager.dailyLimitReached, "Unlock must clear stale daily-limit flag")
+        XCTAssertNil(manager.errorMessage, "Unlock must clear stale daily-limit error message")
+    }
+
     func testStartIsBlockedWhenDailyLimitReached() {
         let tracker = DailyUsageTracker(userDefaults: defaults)
         tracker.recordUsage(seconds: DailyUsageTracker.dailyLimitSeconds)
