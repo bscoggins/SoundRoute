@@ -200,9 +200,15 @@ class AudioManager: ObservableObject {
     ///   "you've used up your free time" condition is obsolete by
     ///   definition. Persistent errors (mic denial, device init failure)
     ///   re-surface naturally on the next `start()` attempt.
-    /// - **Lock mid-session (refund/revocation):** re-engage the tracker
-    ///   so the free-tier daily cap takes effect. If the user is already
-    ///   over the daily limit, stop routing immediately.
+    /// - **Lock while routing:** re-engage the tracker so the free-tier
+    ///   daily cap takes effect. If the user is already over the daily
+    ///   limit, this fires the limit callback immediately and tears
+    ///   down routing cleanly (which sets the error message itself).
+    /// - **Lock while idle with exhausted budget:** surface the same
+    ///   red error as a mid-session limit hit. Otherwise the popover
+    ///   transitions to a locked + no-time-left state silently, with
+    ///   only the header status line indicating why routing is
+    ///   blocked — inconsistent with every other path into this state.
     func handleUnlockStateChange(unlocked: Bool) {
         let wasUnlocked = isUnlockedSnapshot
         isUnlockedSnapshot = unlocked
@@ -210,11 +216,12 @@ class AudioManager: ObservableObject {
             dailyUsageTracker?.stop()
             errorMessage = nil
             dailyLimitReached = false
-        } else if wasUnlocked, isRunning {
-            // Lock arrived while routing. Re-engage the tracker — if the
-            // daily budget is already exhausted, this fires the limit
-            // callback immediately and tears down routing cleanly.
-            startTrackingIfNeeded()
+        } else if wasUnlocked {
+            if isRunning {
+                startTrackingIfNeeded()
+            } else if dailyUsageTracker?.isLimitReached == true {
+                errorMessage = "Free routing time for today is used up."
+            }
         }
     }
 

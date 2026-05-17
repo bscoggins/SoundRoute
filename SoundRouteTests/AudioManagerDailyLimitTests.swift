@@ -35,6 +35,51 @@ final class AudioManagerDailyLimitTests: XCTestCase {
         XCTAssertFalse(manager.dailyLimitReached)
     }
 
+    func testLockTransitionWithExhaustedBudgetShowsErrorMessage() {
+        // Refund-while-not-routing with no free time left today must
+        // surface the same red error as a mid-session limit hit, so the
+        // popover doesn't transition silently into a locked + blocked
+        // state with only the header status indicating why. Caught in
+        // v1.1 smoke testing (Phase F).
+        let tracker = DailyUsageTracker(userDefaults: defaults)
+        tracker.recordUsage(seconds: DailyUsageTracker.dailyLimitSeconds)
+
+        let manager = AudioManager()
+        manager.dailyUsageTracker = tracker
+        manager.handleUnlockStateChange(unlocked: true)
+        XCTAssertNil(manager.errorMessage, "Precondition: unlocked state has no error")
+        XCTAssertFalse(manager.isRunning, "Precondition: not routing")
+
+        // Refund (or any lock transition while idle).
+        manager.handleUnlockStateChange(unlocked: false)
+
+        XCTAssertEqual(
+            manager.errorMessage,
+            "Free routing time for today is used up.",
+            "Lock-while-idle with exhausted budget must surface the daily-limit error"
+        )
+    }
+
+    func testLockTransitionWithBudgetRemainingDoesNotShowError() {
+        // Inverse: refund-while-not-routing with free time still left
+        // must NOT surface a daily-limit error — the user can still
+        // route, just under the cap now.
+        let tracker = DailyUsageTracker(userDefaults: defaults)
+        tracker.recordUsage(seconds: 25 * 60) // 5 minutes remaining
+
+        let manager = AudioManager()
+        manager.dailyUsageTracker = tracker
+        manager.handleUnlockStateChange(unlocked: true)
+        XCTAssertNil(manager.errorMessage)
+
+        manager.handleUnlockStateChange(unlocked: false)
+
+        XCTAssertNil(
+            manager.errorMessage,
+            "Lock transition with budget remaining must not surface an error"
+        )
+    }
+
     func testUnlockClearsStaleDailyLimitErrorMessage() {
         // After hitting the daily limit, the user purchases via the
         // paywall. The unlock event must clear the stale "free routing
