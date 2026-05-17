@@ -31,14 +31,14 @@ macOS doesn't have a built-in way to send a specific input device to a specific 
 
 ## Pricing
 
-SoundRoute is **free to download**. The free tier provides full routing in
-20-minute sessions — long enough to verify the app works with your audio
-hardware (microphones, USB interfaces, turntables, etc.) and comfortably
-long enough for a full LP side. There is no cap on the number of free
-sessions.
+SoundRoute is **free to download**. The free tier provides full routing
+with a **30-minute daily cap** — long enough to verify the app works
+with your audio hardware (microphones, USB interfaces, turntables, etc.)
+and comfortably long enough for a full LP side. The daily counter
+accumulates across sessions and resets at local midnight.
 
 A one-time **$4.99** in-app purchase, *Unlimited Routing*, removes the
-session limit. Buy once; restore on any of your Macs.
+daily limit. Buy once; restore on any of your Macs.
 
 ## Privacy
 
