@@ -1,0 +1,30 @@
+{
+  "identifier" : "B7F8E2A1-3D5C-4E6F-A1B2-C3D4E5F6A7B8",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "1",
+      "localizations" : [
+        {
+          "description" : "Removes the 20-minute session limit on audio routing. One-time purchase, yours forever.",
+          "displayName" : "Unlimited Routing",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "net.abefroman.SoundRoute.unlock",
+      "referenceName" : "SoundRoute Unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_locale" : "en_US",
+    "_storefront" : "USA"
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
