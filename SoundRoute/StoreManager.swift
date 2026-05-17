@@ -73,13 +73,19 @@ final class StoreManager: ObservableObject {
     /// Re-pull entitlements from the App Store. Used when the customer
     /// previously purchased on a different device or had their receipt
     /// wiped. Required by App Store Review Guideline 3.1.1.
+    ///
+    /// `AppStore.sync()` re-delivers entitlements through `Transaction.updates`,
+    /// which our listener handles authoritatively. We deliberately don't
+    /// re-query `Transaction.currentEntitlements` here — that's the
+    /// cold-start path (which init owns) and re-querying would let an
+    /// empty response clobber an entitlement that `handle(.verified)`
+    /// just set during the sync.
     func restorePurchases() async {
         isPurchasing = true
         defer { isPurchasing = false }
 
         do {
             try await AppStore.sync()
-            await refreshFromStoreKit()
             purchaseError = nil
         } catch {
             purchaseError = "Restore failed: \(error.localizedDescription)"
@@ -110,14 +116,16 @@ final class StoreManager: ObservableObject {
         }
 
         // Re-derive entitlement from StoreKit's authoritative answer.
-        var unlocked = false
+        // Empty currentEntitlements is treated as authoritative ("user
+        // owns nothing") — this is required so refunds processed while
+        // the app was closed re-lock on next launch. handle(.verified)
+        // is the live-update path; refreshFromStoreKit is the cold-start
+        // path.
+        var snapshots: [EntitlementSnapshot] = []
         for await result in Transaction.currentEntitlements {
-            if case .verified(let txn) = result,
-               txn.productID == Self.unlockProductID,
-               txn.revocationDate == nil {
-                unlocked = true
-            }
+            snapshots.append(EntitlementSnapshot(verificationResult: result))
         }
+        let unlocked = Self.derivedIsUnlocked(from: snapshots, targetProductID: Self.unlockProductID)
         isUnlocked = unlocked
         UserDefaults.standard.set(unlocked, forKey: Self.entitlementCacheKey)
     }
@@ -125,6 +133,61 @@ final class StoreManager: ObservableObject {
     private func handle(_ result: VerificationResult<Transaction>) async {
         guard case .verified(let txn) = result else { return }
         await txn.finish()
-        await refreshFromStoreKit()
+        guard txn.productID == Self.unlockProductID else { return }
+        // Authoritative: a verified transaction just arrived for our
+        // product. If revocationDate is nil it's a purchase/restore;
+        // if set it's a refund/revocation. Flip immediately — don't
+        // wait on a follow-up currentEntitlements query.
+        let snapshot = EntitlementSnapshot(
+            productID: txn.productID,
+            isVerified: true,
+            revocationDate: txn.revocationDate
+        )
+        let unlocked = Self.derivedIsUnlocked(from: [snapshot], targetProductID: Self.unlockProductID)
+        isUnlocked = unlocked
+        UserDefaults.standard.set(unlocked, forKey: Self.entitlementCacheKey)
+    }
+
+    // MARK: - Pure entitlement derivation (testable)
+
+    /// Pure data carrier describing what we care about in a Transaction
+    /// for entitlement-derivation purposes. Decouples our decision logic
+    /// from `StoreKit.Transaction` (which is hard to mock) so the
+    /// predicate can be tested exhaustively without StoreKit at all.
+    struct EntitlementSnapshot: Equatable {
+        let productID: String
+        let isVerified: Bool
+        let revocationDate: Date?
+
+        init(productID: String, isVerified: Bool, revocationDate: Date?) {
+            self.productID = productID
+            self.isVerified = isVerified
+            self.revocationDate = revocationDate
+        }
+
+        init(verificationResult: VerificationResult<Transaction>) {
+            switch verificationResult {
+            case .verified(let txn):
+                self.init(productID: txn.productID, isVerified: true, revocationDate: txn.revocationDate)
+            case .unverified(let txn, _):
+                self.init(productID: txn.productID, isVerified: false, revocationDate: txn.revocationDate)
+            }
+        }
+    }
+
+    /// Returns `true` iff any snapshot is a verified, non-revoked match
+    /// for `targetProductID`. This is the single rule that governs
+    /// whether SoundRoute considers the user "unlocked" — both the
+    /// cold-start (`refreshFromStoreKit`) and live-update (`handle`)
+    /// paths funnel through here.
+    static func derivedIsUnlocked(
+        from snapshots: [EntitlementSnapshot],
+        targetProductID: String
+    ) -> Bool {
+        snapshots.contains { snap in
+            snap.isVerified
+                && snap.productID == targetProductID
+                && snap.revocationDate == nil
+        }
     }
 }

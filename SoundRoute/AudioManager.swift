@@ -192,12 +192,23 @@ class AudioManager: ObservableObject {
     /// Called by the view layer whenever `StoreManager.isUnlocked`
     /// changes, so the audio engine has a fresh, actor-local snapshot of
     /// unlock state without reaching into `StoreManager` from the audio
-    /// path. Also stops the tracker when the user unlocks mid-session so
-    /// their newly-purchased session doesn't keep draining the daily budget.
+    /// path.
+    ///
+    /// - **Unlock mid-session:** stop the tracker so the newly-purchased
+    ///   session doesn't keep draining the free budget.
+    /// - **Lock mid-session (refund/revocation):** re-engage the tracker
+    ///   so the free-tier daily cap takes effect. If the user is already
+    ///   over the daily limit, stop routing immediately.
     func handleUnlockStateChange(unlocked: Bool) {
+        let wasUnlocked = isUnlockedSnapshot
         isUnlockedSnapshot = unlocked
         if unlocked {
             dailyUsageTracker?.stop()
+        } else if wasUnlocked, isRunning {
+            // Lock arrived while routing. Re-engage the tracker — if the
+            // daily budget is already exhausted, this fires the limit
+            // callback immediately and tears down routing cleanly.
+            startTrackingIfNeeded()
         }
     }
 

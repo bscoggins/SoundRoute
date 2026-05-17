@@ -130,6 +130,68 @@ final class AudioManagerDailyLimitTests: XCTestCase {
         manager.stop()
     }
 
+    func testRefundMidSessionWithBudgetRemainingKeepsRouting() throws {
+        try requireMicrophone()
+        let (input, output) = try requireDefaultDevices()
+
+        let tracker = DailyUsageTracker(userDefaults: defaults)
+        let manager = AudioManager()
+        manager.dailyUsageTracker = tracker
+        // User starts session already unlocked (purchased earlier).
+        manager.handleUnlockStateChange(unlocked: true)
+        manager.setInputDevice(input)
+        manager.setOutputDevice(output)
+
+        manager.start()
+        XCTAssertTrue(manager.isRunning)
+
+        // Refund hits mid-session. Routing should continue because there
+        // is still free-tier budget available, but the tracker must now
+        // be engaged so future seconds count against the daily cap.
+        manager.handleUnlockStateChange(unlocked: false)
+        XCTAssertTrue(
+            manager.isRunning,
+            "Routing must continue when there is still free-tier budget"
+        )
+        XCTAssertFalse(
+            manager.dailyLimitReached,
+            "Daily limit must not be marked reached with budget remaining"
+        )
+
+        manager.stop()
+    }
+
+    func testRefundMidSessionWithExhaustedBudgetStopsRouting() throws {
+        // Worst case: user was routing under an unlock, refund hits, and
+        // they have zero free-tier seconds left today. Routing must
+        // terminate cleanly and the paywall flag must flip so the view
+        // can re-present the paywall on the next snapshot change.
+        try requireMicrophone()
+        let (input, output) = try requireDefaultDevices()
+
+        let tracker = DailyUsageTracker(userDefaults: defaults)
+        tracker.recordUsage(seconds: DailyUsageTracker.dailyLimitSeconds)
+
+        let manager = AudioManager()
+        manager.dailyUsageTracker = tracker
+        // Start unlocked — bypasses the daily-limit gate even though
+        // the tracker is already at the cap.
+        manager.handleUnlockStateChange(unlocked: true)
+        manager.setInputDevice(input)
+        manager.setOutputDevice(output)
+        manager.start()
+        XCTAssertTrue(manager.isRunning, "Unlocked start must succeed regardless of tracker state")
+        XCTAssertFalse(manager.dailyLimitReached)
+
+        // Refund hits. handleUnlockStateChange re-engages the tracker,
+        // which fires its limit callback immediately because the cap is
+        // already exhausted.
+        manager.handleUnlockStateChange(unlocked: false)
+
+        XCTAssertFalse(manager.isRunning, "Routing must stop when budget is exhausted at refund time")
+        XCTAssertTrue(manager.dailyLimitReached, "Paywall flag must flip on exhausted-refund")
+    }
+
     // MARK: - Helpers
 
     private func requireMicrophone() throws {
