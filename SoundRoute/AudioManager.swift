@@ -9,6 +9,23 @@ class AudioManager: ObservableObject {
     @Published var errorMessage: String?
     @Published var isMicrophoneDenied = false
 
+    /// Flips `true` exactly when the free-tier daily budget is reached —
+    /// either organically while routing, or by an attempt to `start()`
+    /// when the budget is already exhausted. The view observes this to
+    /// auto-present the paywall, then resets it back to `false`.
+    @Published var dailyLimitReached: Bool = false
+
+    /// Free-tier daily budget tracker. Optional because tests and
+    /// previews can omit it; in the running app it's wired up by the
+    /// view layer at launch. The audio path uses it to gate `start()`
+    /// and to count seconds while routing.
+    var dailyUsageTracker: DailyUsageTracker?
+
+    /// Snapshot of `StoreManager.isUnlocked` kept in sync via
+    /// `handleUnlockStateChange(unlocked:)`. Cached locally so the audio
+    /// path doesn't have to hop actors to read it.
+    private var isUnlockedSnapshot: Bool = false
+
     private var inputDeviceID: AudioDeviceID?
     private var outputDeviceID: AudioDeviceID?
 
@@ -61,6 +78,13 @@ class AudioManager: ObservableObject {
     func start() {
         guard let inputID = inputDeviceID, let outputID = outputDeviceID else {
             errorMessage = "Please select both input and output devices"
+            return
+        }
+
+        // Free-tier daily-budget gate. Unlocked users skip this entirely.
+        if !isUnlockedSnapshot, let tracker = dailyUsageTracker, tracker.isLimitReached {
+            errorMessage = "Free routing time for today is used up. Unlock for unlimited routing."
+            dailyLimitReached = true
             return
         }
 
@@ -141,6 +165,40 @@ class AudioManager: ObservableObject {
         }
 
         isRunning = true
+        startTrackingIfNeeded()
+    }
+
+    /// Hand control to the daily-usage tracker so it counts seconds
+    /// against the free budget while routing. Unlocked users skip this
+    /// entirely. The tracker fires `handleDailyLimitReached` once if the
+    /// daily cap is hit mid-session.
+    private func startTrackingIfNeeded() {
+        guard !isUnlockedSnapshot else { return }
+        dailyUsageTracker?.start { [weak self] in
+            self?.handleDailyLimitReached()
+        }
+    }
+
+    /// Invoked by `DailyUsageTracker` when the daily budget is exhausted
+    /// mid-session. Stops routing cleanly, surfaces the message, and
+    /// flips `dailyLimitReached` so the view auto-presents the paywall.
+    private func handleDailyLimitReached() {
+        cleanup()
+        isRunning = false
+        errorMessage = "Free routing time for today is used up. Unlock for unlimited routing."
+        dailyLimitReached = true
+    }
+
+    /// Called by the view layer whenever `StoreManager.isUnlocked`
+    /// changes, so the audio engine has a fresh, actor-local snapshot of
+    /// unlock state without reaching into `StoreManager` from the audio
+    /// path. Also stops the tracker when the user unlocks mid-session so
+    /// their newly-purchased session doesn't keep draining the daily budget.
+    func handleUnlockStateChange(unlocked: Bool) {
+        isUnlockedSnapshot = unlocked
+        if unlocked {
+            dailyUsageTracker?.stop()
+        }
     }
 
     private func createInputUnit(deviceID: AudioDeviceID) -> AudioComponentInstance? {
@@ -328,6 +386,10 @@ class AudioManager: ObservableObject {
     }
 
     func stop() {
+        // Stop the daily counter first so it stops accruing seconds; the
+        // tracker self-persists on every tick, so all the user's actual
+        // routing time is already saved — no flush needed here.
+        dailyUsageTracker?.stop()
         cleanup()
         isRunning = false
     }

@@ -16,6 +16,7 @@ struct SoundRouteApp: App {
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
@@ -54,7 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover.behavior = .transient
         popover.animates = true
         popover.contentSize = NSSize(width: 300, height: 460)
-        popover.contentViewController = NSHostingController(rootView: ContentView())
+        popover.contentViewController = NSHostingController(
+            rootView: ContentView()
+                .environmentObject(StoreManager.shared)
+        )
         popover.delegate = self
     }
 
@@ -110,6 +114,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         menu.addItem(.separator())
 
+        let restoreItem = NSMenuItem(title: "Restore Purchases",
+                                     action: #selector(restorePurchases),
+                                     keyEquivalent: "")
+        restoreItem.target = self
+        menu.addItem(restoreItem)
+
+        menu.addItem(.separator())
+
         let quitItem = NSMenuItem(title: "Quit SoundRoute",
                                   action: #selector(NSApplication.terminate(_:)),
                                   keyEquivalent: "q")
@@ -145,6 +157,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         NSWorkspace.shared.open(
             URL(string: "https://github.com/bscoggins/SoundRoute")!
         )
+    }
+
+    @objc private func restorePurchases() {
+        Task { await StoreManager.shared.restorePurchases() }
     }
 
     @objc private func defaultsDidChange() {

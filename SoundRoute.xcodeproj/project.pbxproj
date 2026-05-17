@@ -15,6 +15,9 @@
 		8A1234560006 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8A1234550007 /* PrivacyInfo.xcprivacy */; };
 		8A1234560007 /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550008 /* RingBuffer.swift */; };
 		8A1234560008 /* SelectionResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550009 /* SelectionResolver.swift */; };
+		8A1234560010 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550011 /* StoreManager.swift */; };
+		8A1234560011 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550012 /* PaywallView.swift */; };
+		8A1234560012 /* DailyUsageTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234550014 /* DailyUsageTracker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +42,10 @@
 		8A1234550007 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8A1234550008 /* RingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBuffer.swift; sourceTree = "<group>"; };
 		8A1234550009 /* SelectionResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionResolver.swift; sourceTree = "<group>"; };
+		8A1234550011 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
+		8A1234550012 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		8A1234550013 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+		8A1234550014 /* DailyUsageTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyUsageTracker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -81,6 +88,10 @@
 				8A1234550004 /* AudioManager.swift */,
 				8A1234550008 /* RingBuffer.swift */,
 				8A1234550009 /* SelectionResolver.swift */,
+				8A1234550011 /* StoreManager.swift */,
+				8A1234550012 /* PaywallView.swift */,
+				8A1234550014 /* DailyUsageTracker.swift */,
+				8A1234550013 /* Products.storekit */,
 				8A1234550005 /* Assets.xcassets */,
 				8A1234550006 /* SoundRoute.entitlements */,
 				8A1234550007 /* PrivacyInfo.xcprivacy */,
@@ -215,6 +226,9 @@
 				8A1234560004 /* AudioManager.swift in Sources */,
 				8A1234560007 /* RingBuffer.swift in Sources */,
 				8A1234560008 /* SelectionResolver.swift in Sources */,
+				8A1234560010 /* StoreManager.swift in Sources */,
+				8A1234560011 /* PaywallView.swift in Sources */,
+				8A1234560012 /* DailyUsageTracker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -26,8 +26,19 @@ macOS doesn't have a built-in way to send a specific input device to a specific 
 - Hot-plug detection — connect AirPods or an interface and it appears immediately
 - Optional launch at login (`SMAppService`)
 - Optional Dock icon
-- Right-click the menu bar icon for About / Privacy / Support / Quit
+- Right-click the menu bar icon for About / Privacy / Support / Restore Purchases / Quit
 - Native SwiftUI + AppKit, no third-party dependencies
+
+## Pricing
+
+SoundRoute is **free to download**. The free tier provides full routing in
+20-minute sessions — long enough to verify the app works with your audio
+hardware (microphones, USB interfaces, turntables, etc.) and comfortably
+long enough for a full LP side. There is no cap on the number of free
+sessions.
+
+A one-time **$4.99** in-app purchase, *Unlimited Routing*, removes the
+session limit. Buy once; restore on any of your Macs.
 
 ## Privacy
 
@@ -69,10 +80,15 @@ Selection persistence is keyed on each device's `kAudioDevicePropertyDeviceUID` 
 ## Architecture
 
 - `SoundRouteApp.swift` — `@main` entry; `AppDelegate` owns the `NSStatusItem`, `NSPopover`, and right-click context menu, and toggles activation policy for the Dock-icon preference.
-- `ContentView.swift` — SwiftUI popover UI: device pickers, Start/Stop, mic-permission affordance, footer toggles.
+- `ContentView.swift` — SwiftUI popover UI: device pickers, Start/Stop, mic-permission affordance, daily-remaining indicator, paywall presentation, footer toggles.
 - `AudioDeviceManager.swift` — CoreAudio device enumeration + hot-plug listener.
-- `AudioManager.swift` — Two-AudioUnit routing engine and ring buffer.
-- `PrivacyInfo.xcprivacy` — App Store privacy manifest declaring no tracking, no data collection, and `UserDefaults` access for `@AppStorage` persistence.
+- `AudioManager.swift` — Two-AudioUnit routing engine, integrated with the daily usage tracker for the free tier.
+- `RingBuffer.swift` — SPSC lock-protected ring buffer bridging the two AudioUnits.
+- `SelectionResolver.swift` — Pure decisions about which `AudioDevice` to restore at launch and how to reconcile selection after hot-plug.
+- `DailyUsageTracker.swift` — Persistent counter for the free-tier daily routing budget; auto-resets at local midnight.
+- `StoreManager.swift` — StoreKit 2 product loading, transaction monitoring, and entitlement state for the unlock IAP.
+- `PaywallView.swift` — SwiftUI sheet for the unlock IAP, including Restore Purchases.
+- `PrivacyInfo.xcprivacy` — App Store privacy manifest declaring no tracking, no data collection, and `UserDefaults` access for `@AppStorage` and entitlement caching.
 
 ## Support
 

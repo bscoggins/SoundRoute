@@ -5,9 +5,12 @@ import ServiceManagement
 struct ContentView: View {
     @StateObject private var deviceManager = AudioDeviceManager()
     @StateObject private var audioManager = AudioManager()
+    @StateObject private var dailyUsageTracker = DailyUsageTracker()
+    @EnvironmentObject private var storeManager: StoreManager
 
     @State private var selectedInputDevice: AudioDevice?
     @State private var selectedOutputDevice: AudioDevice?
+    @State private var showingPaywall = false
 
     @AppStorage("showInDock") private var showInDock = false
     @AppStorage("savedInputUID") private var savedInputUID: String = ""
@@ -68,6 +71,8 @@ struct ContentView: View {
         .onAppear {
             restoreSelections()
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            audioManager.dailyUsageTracker = dailyUsageTracker
+            audioManager.handleUnlockStateChange(unlocked: storeManager.isUnlocked)
         }
         .onChange(of: selectedInputDevice) { _, new in
             savedInputUID = new?.uid ?? ""
@@ -84,17 +89,29 @@ struct ContentView: View {
         .onChange(of: launchAtLogin) { _, newValue in
             applyLaunchAtLogin(newValue)
         }
+        .onChange(of: storeManager.isUnlocked) { _, unlocked in
+            audioManager.handleUnlockStateChange(unlocked: unlocked)
+        }
+        .onChange(of: audioManager.dailyLimitReached) { _, reached in
+            if reached {
+                showingPaywall = true
+                audioManager.dailyLimitReached = false
+            }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView(storeManager: storeManager)
+        }
     }
 
     private var header: some View {
         HStack(spacing: 10) {
             ZStack {
                 Circle()
-                    .fill(audioManager.isRunning ? Color.green.opacity(0.18) : Color.secondary.opacity(0.15))
+                    .fill(statusTint.opacity(audioManager.isRunning ? 0.18 : 0.15))
                     .frame(width: 30, height: 30)
                 Image(systemName: audioManager.isRunning ? "waveform" : "waveform.slash")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(audioManager.isRunning ? .green : .secondary)
+                    .foregroundStyle(statusTint)
                     .symbolEffect(.variableColor.iterative, isActive: audioManager.isRunning)
             }
 
@@ -203,6 +220,13 @@ struct ContentView: View {
 
     private var actionButton: some View {
         Button {
+            // If the user has burned through the daily free budget and
+            // isn't unlocked, route the tap straight to the paywall
+            // rather than try (and silently fail) to start audio.
+            if !storeManager.isUnlocked && dailyUsageTracker.isLimitReached && !audioManager.isRunning {
+                showingPaywall = true
+                return
+            }
             if let input = selectedInputDevice {
                 audioManager.setInputDevice(input.id)
             }
@@ -233,6 +257,17 @@ struct ContentView: View {
                 .toggleStyle(.checkbox)
                 .controlSize(.small)
 
+            if !storeManager.isUnlocked {
+                Button {
+                    showingPaywall = true
+                } label: {
+                    Label("Unlock unlimited routing", systemImage: "lock.open")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .padding(.top, 2)
+            }
+
             HStack {
                 Spacer()
                 Button {
@@ -251,13 +286,38 @@ struct ContentView: View {
     }
 
     private var statusText: String {
+        // Free users see a "left today" suffix so they understand why
+        // routing eventually stops. Unlocked users see the clean text.
+        let freeSuffix = storeManager.isUnlocked
+            ? ""
+            : " · \(formatRemaining(dailyUsageTracker.remainingSecondsToday)) left today"
+
         if audioManager.isRunning {
-            return "Routing audio"
-        } else if selectedInputDevice != nil && selectedOutputDevice != nil {
-            return "Ready"
-        } else {
-            return "Select input and output"
+            return "Routing\(freeSuffix)"
         }
+        if !storeManager.isUnlocked && dailyUsageTracker.isLimitReached {
+            return "Daily free limit reached"
+        }
+        if selectedInputDevice != nil && selectedOutputDevice != nil {
+            return "Ready\(freeSuffix)"
+        }
+        return "Select input and output"
+    }
+
+    private var statusTint: Color {
+        guard audioManager.isRunning else { return .secondary }
+        // Pulse amber in the final minute of the daily budget so the
+        // user has a visual heads-up before routing cuts out.
+        if !storeManager.isUnlocked && dailyUsageTracker.remainingSecondsToday <= 60 {
+            return .orange
+        }
+        return .green
+    }
+
+    private func formatRemaining(_ seconds: Int) -> String {
+        let m = max(0, seconds) / 60
+        let s = max(0, seconds) % 60
+        return String(format: "%d:%02d", m, s)
     }
 
     private func restoreSelections() {
@@ -318,4 +378,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(StoreManager.shared)
 }
