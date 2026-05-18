@@ -35,12 +35,38 @@ class AudioManager: ObservableObject {
     private var outputAU: AudioComponentInstance?
 
     private var ringBuffer: RingBuffer?
+
+    // Format used end-to-end through the ring buffer. Sample rate is set
+    // at start() from the **input device's nominal rate**, not a fixed
+    // constant — macOS 26's HAL Output AudioUnit returns
+    // kAudioUnitErr_CannotDoInCurrentContext from AudioUnitRender any time
+    // its StreamFormat rate disagrees with the device's actual rate, so
+    // we configure each AU at its own device's native rate and bridge
+    // any rate mismatch ourselves via outputConverter below.
     private var bufferFormat = AudioStreamBasicDescription()
+
+    // Output device's native rate. Used to configure the output AU and to
+    // size outputConverter when input and output devices disagree.
+    private var outputDeviceRate: Float64 = 48_000
+
+    // SRC bridge from input rate (ring buffer rate) to output rate.
+    // Created in start() only when the two devices' nominal rates differ;
+    // nil means the output callback can fetch from the ring buffer
+    // directly with no conversion overhead.
+    private var outputConverter: AudioConverterRef?
+    private var converterInputBuffers: PreallocatedInputBuffers?
 
     // Pre-allocated render buffers used inside the input callback so the
     // audio thread never has to allocate. Sized to maxFramesPerSlice; the
     // unit is told to never deliver more than that many frames per call.
     private static let maxFramesPerSlice: UInt32 = 4096
+
+    // The output AU's render callback can request up to maxFramesPerSlice
+    // frames at the output rate. When SRC is active, the corresponding
+    // input-rate frame count is bounded by maxFramesPerSlice * (R_in/R_out).
+    // We bound this conservatively at 4× to handle ratios up to e.g.
+    // 192 kHz input vs. 48 kHz output (worst plausible case).
+    private static let maxConverterInputFrames: Int = Int(maxFramesPerSlice) * 4
 
     // Ring buffer capacity in frames (~170 ms at 48 kHz) — generous slack to
     // absorb device clock drift between input and output.
@@ -119,24 +145,38 @@ class AudioManager: ObservableObject {
         errorMessage = nil
         isMicrophoneDenied = false
 
-        // Hardcoded to 48 kHz stereo non-interleaved float. The HAL Output
-        // unit handles sample-rate and channel-count conversion to/from the
-        // device's native format, so this works for ~all consumer hardware.
-        // Mono-only devices may require explicit format negotiation; deferred.
-        bufferFormat = AudioStreamBasicDescription(
-            mSampleRate: 48000,
-            mFormatID: kAudioFormatLinearPCM,
-            mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | kAudioFormatFlagIsNonInterleaved,
-            mBytesPerPacket: 4,
-            mFramesPerPacket: 1,
-            mBytesPerFrame: 4,
-            mChannelsPerFrame: 2,
-            mBitsPerChannel: 32,
-            mReserved: 0
-        )
+        // Read each device's nominal sample rate. macOS 26's HAL Output
+        // AudioUnit requires StreamFormat rate to match the device — any
+        // mismatch makes AudioUnitRender fail with
+        // kAudioUnitErr_CannotDoInCurrentContext on every callback (sound
+        // silently disappears). So we configure each AU at its device's
+        // own rate and let outputConverter bridge if they differ.
+        let inputRate = Self.deviceNominalSampleRate(inputID) ?? 48_000
+        outputDeviceRate = Self.deviceNominalSampleRate(outputID) ?? 48_000
+
+        // Ring buffer + input AU run at the input device's rate.
+        bufferFormat = Self.makeStreamFormat(sampleRate: inputRate)
 
         ringBuffer = RingBuffer(channelCount: 2, capacityFrames: Self.ringBufferCapacityFrames)
         inputBuffers = PreallocatedInputBuffers(maxFrames: Int(Self.maxFramesPerSlice))
+
+        // Create the output-side SRC bridge only when devices disagree.
+        // When they match (the common case — both at 48 kHz), the output
+        // callback fetches from the ring buffer directly with no
+        // conversion overhead.
+        if inputRate != outputDeviceRate {
+            converterInputBuffers = PreallocatedInputBuffers(maxFrames: Self.maxConverterInputFrames)
+            var srcFormat = bufferFormat
+            var dstFormat = Self.makeStreamFormat(sampleRate: outputDeviceRate)
+            var converter: AudioConverterRef?
+            let cvStatus = AudioConverterNew(&srcFormat, &dstFormat, &converter)
+            guard cvStatus == noErr, let converter else {
+                errorMessage = "Could not create sample-rate converter (error: \(cvStatus))"
+                cleanup()
+                return
+            }
+            outputConverter = converter
+        }
 
         guard let inputUnit = createInputUnit(deviceID: inputID) else {
             cleanup()
@@ -358,7 +398,12 @@ class AudioManager: ObservableObject {
             return nil
         }
 
-        var format = bufferFormat
+        // Output AU runs at the output device's native rate. If that
+        // differs from the input device's rate, outputConverter (set up
+        // in start()) bridges between them — the output render callback
+        // pulls from the ring buffer at inputRate and converts to
+        // outputDeviceRate before delivering.
+        var format = Self.makeStreamFormat(sampleRate: outputDeviceRate)
         status = AudioUnitSetProperty(audioUnit, kAudioUnitProperty_StreamFormat,
                                       kAudioUnitScope_Input, 0, &format, UInt32(MemoryLayout<AudioStreamBasicDescription>.size))
         if status != noErr {
@@ -405,6 +450,11 @@ class AudioManager: ObservableObject {
         // touches our pre-allocated buffers — safe to drop the last reference.
         disposeUnit(&outputAU)
         disposeUnit(&inputAU)
+        if let converter = outputConverter {
+            AudioConverterDispose(converter)
+        }
+        outputConverter = nil
+        converterInputBuffers = nil
         inputBuffers = nil  // ARC frees via deinit
         ringBuffer = nil
     }
@@ -466,8 +516,123 @@ class AudioManager: ObservableObject {
         ioData: UnsafeMutablePointer<AudioBufferList>,
         frameCount: UInt32
     ) {
-        ringBuffer?.fetch(ioData, frameCount: frameCount)
+        // Common path: input and output devices agree on rate, so the
+        // output AU asks for the exact same frames we have queued. Skip
+        // SRC entirely — fetch directly from the ring buffer.
+        guard let converter = outputConverter else {
+            ringBuffer?.fetch(ioData, frameCount: frameCount)
+            return
+        }
+
+        // Rate-bridged path: AudioConverter pulls inputRate frames from
+        // the ring via our input-data callback and writes outputRate
+        // frames to ioData. Real-time-safe — no allocations in the
+        // hot path; converterInputBuffers were pre-allocated in start().
+        var framesToProduce = frameCount
+        let status = AudioConverterFillComplexBuffer(
+            converter,
+            converterInputDataCallback,
+            UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+            &framesToProduce,
+            ioData,
+            nil
+        )
+        if status != noErr || framesToProduce < frameCount {
+            // Underrun or convert failure — zero-fill the remaining
+            // tail of each channel buffer so the device gets silence
+            // rather than uninitialized memory.
+            let abl = UnsafeMutableAudioBufferListPointer(ioData)
+            let zeroOffset = Int(framesToProduce) * 4
+            let zeroBytes = Int(frameCount - framesToProduce) * 4
+            for buf in abl {
+                guard let base = buf.mData, zeroBytes > 0 else { continue }
+                memset(base.advanced(by: zeroOffset), 0, zeroBytes)
+            }
+        }
     }
+
+    /// Called by `AudioConverterFillComplexBuffer` on the audio thread
+    /// to refill the converter's input buffer from our ring buffer.
+    /// Always provides exactly the number of frames requested (the ring
+    /// buffer zero-fills on underrun, which is the right behavior here:
+    /// briefly missing input maps to brief silence at the output).
+    fileprivate func handleConverterInputData(
+        ioDataPacketCount: UnsafeMutablePointer<UInt32>,
+        ioData: UnsafeMutablePointer<AudioBufferList>
+    ) -> OSStatus {
+        let maxFrames = UInt32(Self.maxConverterInputFrames)
+        let requested = min(ioDataPacketCount.pointee, maxFrames)
+        guard let convBufs = converterInputBuffers else {
+            ioDataPacketCount.pointee = 0
+            return noErr
+        }
+
+        let byteSize = requested * 4
+        convBufs.listPtr[0] = AudioBuffer(
+            mNumberChannels: 1,
+            mDataByteSize: byteSize,
+            mData: UnsafeMutableRawPointer(convBufs.left)
+        )
+        convBufs.listPtr[1] = AudioBuffer(
+            mNumberChannels: 1,
+            mDataByteSize: byteSize,
+            mData: UnsafeMutableRawPointer(convBufs.right)
+        )
+        ringBuffer?.fetch(convBufs.listPtr.unsafeMutablePointer, frameCount: requested)
+
+        // Hand the converter our preallocated buffers (no copy).
+        let abl = UnsafeMutableAudioBufferListPointer(ioData)
+        abl[0] = convBufs.listPtr[0]
+        if abl.count > 1 {
+            abl[1] = convBufs.listPtr[1]
+        }
+        ioDataPacketCount.pointee = requested
+        return noErr
+    }
+
+    // MARK: - Format helpers
+
+    /// Reads a device's nominal sample rate via the CoreAudio HAL. Returns
+    /// nil when the property isn't queryable on the device.
+    private static func deviceNominalSampleRate(_ deviceID: AudioDeviceID) -> Float64? {
+        var rate: Float64 = 0
+        var size = UInt32(MemoryLayout<Float64>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let status = AudioObjectGetPropertyData(deviceID, &addr, 0, nil, &size, &rate)
+        return status == noErr && rate > 0 ? rate : nil
+    }
+
+    /// Builds the canonical SoundRoute stream format (stereo float32,
+    /// non-interleaved, packed) at the requested sample rate.
+    private static func makeStreamFormat(sampleRate: Float64) -> AudioStreamBasicDescription {
+        AudioStreamBasicDescription(
+            mSampleRate: sampleRate,
+            mFormatID: kAudioFormatLinearPCM,
+            mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | kAudioFormatFlagIsNonInterleaved,
+            mBytesPerPacket: 4,
+            mFramesPerPacket: 1,
+            mBytesPerFrame: 4,
+            mChannelsPerFrame: 2,
+            mBitsPerChannel: 32,
+            mReserved: 0
+        )
+    }
+}
+
+private func converterInputDataCallback(
+    _ converter: AudioConverterRef,
+    _ ioPacketCount: UnsafeMutablePointer<UInt32>,
+    _ ioData: UnsafeMutablePointer<AudioBufferList>,
+    _ packetDescriptions: UnsafeMutablePointer<UnsafeMutablePointer<AudioStreamPacketDescription>?>?,
+    _ refCon: UnsafeMutableRawPointer?
+) -> OSStatus {
+    guard let refCon else { return noErr }
+    let manager = Unmanaged<AudioManager>.fromOpaque(refCon).takeUnretainedValue()
+    return manager.handleConverterInputData(ioDataPacketCount: ioPacketCount, ioData: ioData)
 }
 
 /// Owns the heap memory the input render callback writes into. Class so ARC
