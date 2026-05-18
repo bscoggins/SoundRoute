@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// Presented as a sheet from `ContentView`, either when the user taps
-/// Unlock or automatically when a free session expires while routing.
+/// Unlock or automatically when the daily free routing budget is
+/// exhausted (the 30-minute daily cap is hit and `AudioManager`
+/// flips `dailyLimitReached`).
 ///
 /// Conforms to App Store Review Guideline 3.1.1 by:
 ///   - Displaying StoreKit's localized price (transparency).
@@ -55,7 +57,7 @@ struct PaywallView: View {
 
     private var valueProps: some View {
         VStack(alignment: .leading, spacing: 10) {
-            row("infinity", "No session time limit")
+            row("infinity", "No daily time limit")
             row("waveform.path", "Full routing for vinyl, podcasts, streams")
             row("checkmark.shield", "Buy once. Restore on any of your Macs.")
         }

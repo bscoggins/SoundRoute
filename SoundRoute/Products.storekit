@@ -20,7 +20,7 @@
       "internalID" : "1",
       "localizations" : [
         {
-          "description" : "One-time purchase. Removes the 30-minute daily free routing limit.",
+          "description" : "Removes the 30-minute daily routing limit.",
           "displayName" : "Unlimited Routing",
           "locale" : "en_US"
         }
