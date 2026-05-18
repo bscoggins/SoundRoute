@@ -108,32 +108,73 @@ final class AudioIntegrityTests: XCTestCase {
         XCTAssertEqual(detected, 440, accuracy: Self.frequencyTolerance)
     }
 
-    // The "44.1 kHz source via SRC" scenario used to live here as a test
-    // — it was deleted because it cannot be tested with BlackHole. Two
-    // independent failure modes block it:
-    //
-    //   1. **Mixed-rate single device**: if the generator opens BH 2ch
-    //      at 44.1 kHz while the router opens BH 2ch at 48 kHz, the
-    //      virtual device renegotiates to one shared rate and silences
-    //      the other side.
-    //   2. **Explicit device-rate setup also fails**: setting BH 2ch's
-    //      nominal rate to 44.1 kHz before opening either client
-    //      (verified via CLI probe with `AudioObjectSetPropertyData`)
-    //      causes the router's input HAL Output AudioUnit to deliver
-    //      pure silence on output scope bus 1, even though that bus is
-    //      explicitly set to 48 kHz stereo float. The HAL Output unit's
-    //      automatic SRC doesn't engage reliably when BlackHole is
-    //      behind it. Same pipeline at 48 kHz produces clean signal.
-    //
-    // Production scenario (44.1 kHz USB mic → 48 kHz HAL output)
-    // doesn't hit either failure mode: only one client per device side,
-    // and real CoreAudio devices' SRC works correctly via the HAL Output
-    // unit. The shipped v1.0 app handles 44.1 kHz hardware for real
-    // users. This path is verified manually with real 44.1 kHz hardware
-    // per the pre-submission checklist (see
-    // IMPLEMENTATION_PLAN_v1.1.md § Code, build, and tests).
+    func testRouteHandlesNon48kHzSourceViaSRC() throws {
+        // Regression test for the macOS 26 HAL Output unit SRC bug
+        // (fixed by the AudioConverter bridge added to AudioManager).
+        //
+        // Pre-fix: AudioUnitRender returned kAudioUnitErr_CannotDoInCurrentContext
+        // (-10863) on every callback whenever the AU's StreamFormat rate
+        // disagreed with the device's nominal rate, silently dropping all
+        // audio. The shipped v1.0 was affected for any user with a non-48
+        // kHz audio device.
+        //
+        // Test setup: programmatically set BH 2ch's nominal rate to 44.1
+        // kHz via AudioObjectSetPropertyData (the same call Audio MIDI
+        // Setup makes when the user changes the Format dropdown). The
+        // generator + AudioManager input AU then operate at 44.1 kHz
+        // natively, the AudioConverter bridges 44.1 → 48 kHz on the
+        // output side, and BH 16ch + capturer continue at 48 kHz.
+        //
+        // Restores BH 2ch's rate in defer so the rest of the suite
+        // (which assumes 48 kHz) isn't disturbed.
+        let originalRate = Self.deviceNominalSampleRate(blackHole2chInputID) ?? 48_000
+        guard Self.setDeviceNominalSampleRate(blackHole2chInputID, 44_100) == noErr else {
+            throw XCTSkip("Could not set BlackHole 2ch rate to 44.1 kHz")
+        }
+        defer { _ = Self.setDeviceNominalSampleRate(blackHole2chInputID, originalRate) }
+        // CoreAudio rate changes propagate asynchronously through the
+        // HAL; give the driver a moment to settle before opening clients.
+        Thread.sleep(forTimeInterval: 0.25)
+
+        let detected = try routeAndMeasureFrequencyWithRetry(
+            inputFrequency: 1000,
+            sourceSampleRate: 44_100
+        )
+        XCTAssertEqual(detected, 1000, accuracy: Self.frequencyTolerance,
+                       "44.1 kHz → 48 kHz SRC must preserve the 1 kHz tone within ±\(Self.frequencyTolerance) Hz")
+    }
 
     // MARK: - Helpers
+
+    /// Reads a device's nominal sample rate via the CoreAudio HAL.
+    /// Mirrors AudioManager.deviceNominalSampleRate so tests can verify
+    /// production behavior without exposing that helper.
+    private static func deviceNominalSampleRate(_ deviceID: AudioDeviceID) -> Float64? {
+        var rate: Float64 = 0
+        var size = UInt32(MemoryLayout<Float64>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let status = AudioObjectGetPropertyData(deviceID, &addr, 0, nil, &size, &rate)
+        return status == noErr && rate > 0 ? rate : nil
+    }
+
+    @discardableResult
+    private static func setDeviceNominalSampleRate(
+        _ deviceID: AudioDeviceID,
+        _ rate: Float64
+    ) -> OSStatus {
+        var r = rate
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        return AudioObjectSetPropertyData(deviceID, &addr, 0, nil,
+                                          UInt32(MemoryLayout<Float64>.size), &r)
+    }
 
     /// Runs `routeAndMeasureFrequency` and retries up to
     /// `Self.maxAttempts` times when the result reads as silence
