@@ -56,6 +56,13 @@ class AudioManager: ObservableObject {
     private var outputConverter: AudioConverterRef?
     private var converterInputBuffers: PreallocatedInputBuffers?
 
+    // Device IDs that the rate-change listener is currently registered
+    // for. Captured at registration time so cleanup() can unregister
+    // even if inputDeviceID/outputDeviceID have been updated since.
+    private var rateListenerInputID: AudioDeviceID?
+    private var rateListenerOutputID: AudioDeviceID?
+    private var isReconfiguringForRateChange = false
+
     // Pre-allocated render buffers used inside the input callback so the
     // audio thread never has to allocate. Sized to maxFramesPerSlice; the
     // unit is told to never deliver more than that many frames per call.
@@ -203,6 +210,8 @@ class AudioManager: ObservableObject {
             cleanup()
             return
         }
+
+        registerRateChangeListeners(inputID: inputID, outputID: outputID)
 
         isRunning = true
         startTrackingIfNeeded()
@@ -448,6 +457,7 @@ class AudioManager: ObservableObject {
         // AudioOutputUnitStop is synchronous and drains in-flight callbacks,
         // so by the time disposeUnit returns, the audio thread no longer
         // touches our pre-allocated buffers — safe to drop the last reference.
+        unregisterRateChangeListeners()
         disposeUnit(&outputAU)
         disposeUnit(&inputAU)
         if let converter = outputConverter {
@@ -457,6 +467,87 @@ class AudioManager: ObservableObject {
         converterInputBuffers = nil
         inputBuffers = nil  // ARC frees via deinit
         ringBuffer = nil
+    }
+
+    // MARK: - Device rate-change watcher
+
+    /// Registers CoreAudio property listeners for nominal sample rate
+    /// changes on both the input and output devices. When either device's
+    /// rate changes (Audio MIDI Setup, or a pro audio interface
+    /// auto-negotiating for another client), `handleDeviceRateChange`
+    /// rebuilds the AU + converter chain on the main thread so routing
+    /// continues at the new rate without the user having to Stop + Start.
+    ///
+    /// Uses the C-function listener API (refCon pattern, same as the audio
+    /// render callbacks) rather than the Block variant — the latter
+    /// caused SEGVs across the test suite, likely due to Swift's optional
+    /// storage of `@convention(block)` closures interacting badly with
+    /// `AudioObject*PropertyListenerBlock`'s lifecycle.
+    private func registerRateChangeListeners(inputID: AudioDeviceID, outputID: AudioDeviceID) {
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let refCon = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
+        AudioObjectAddPropertyListener(inputID, &addr, rateChangeListenerProc, refCon)
+        rateListenerInputID = inputID
+        if outputID != inputID {
+            AudioObjectAddPropertyListener(outputID, &addr, rateChangeListenerProc, refCon)
+            rateListenerOutputID = outputID
+        } else {
+            rateListenerOutputID = nil
+        }
+    }
+
+    private func unregisterRateChangeListeners() {
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let refCon = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
+        if let inID = rateListenerInputID {
+            AudioObjectRemovePropertyListener(inID, &addr, rateChangeListenerProc, refCon)
+            rateListenerInputID = nil
+        }
+        if let outID = rateListenerOutputID {
+            AudioObjectRemovePropertyListener(outID, &addr, rateChangeListenerProc, refCon)
+            rateListenerOutputID = nil
+        }
+    }
+
+    /// Called (on the main thread, dispatched from the CoreAudio listener
+    /// callback) when either device's nominal sample rate changes.
+    /// Reconfigures the pipeline only if the new rates actually differ
+    /// from what we built `start()` against — guards against listener
+    /// chatter and re-entry while a reconfigure is already in flight.
+    fileprivate func handleDeviceRateChange() {
+        guard isRunning,
+              !isReconfiguringForRateChange,
+              let inID = inputDeviceID,
+              let outID = outputDeviceID else { return }
+
+        let currentInputRate = Self.deviceNominalSampleRate(inID) ?? 0
+        let currentOutputRate = Self.deviceNominalSampleRate(outID) ?? 0
+        let configuredInputRate = bufferFormat.mSampleRate
+        let configuredOutputRate = outputDeviceRate
+
+        guard currentInputRate != configuredInputRate
+                || currentOutputRate != configuredOutputRate else {
+            return
+        }
+
+        isReconfiguringForRateChange = true
+        defer { isReconfiguringForRateChange = false }
+
+        // start() begins with stop() → cleanup(), which unregisters the
+        // listeners and tears down the AU chain + converter. It then
+        // re-reads each device's current nominal rate, rebuilds the
+        // pipeline, and re-registers the listeners. The unlock snapshot
+        // and daily tracker reference persist on AudioManager so gating
+        // + counting resume seamlessly.
+        start()
     }
 
     func stop() {
@@ -621,6 +712,22 @@ class AudioManager: ObservableObject {
             mReserved: 0
         )
     }
+}
+
+private func rateChangeListenerProc(
+    _ inObjectID: AudioObjectID,
+    _ inNumberAddresses: UInt32,
+    _ inAddresses: UnsafePointer<AudioObjectPropertyAddress>,
+    _ inClientData: UnsafeMutableRawPointer?
+) -> OSStatus {
+    guard let inClientData else { return noErr }
+    let manager = Unmanaged<AudioManager>.fromOpaque(inClientData).takeUnretainedValue()
+    // CoreAudio invokes this on its own thread; bounce to main where the
+    // observable @Published state and the rebuild path can run safely.
+    DispatchQueue.main.async {
+        manager.handleDeviceRateChange()
+    }
+    return noErr
 }
 
 private func converterInputDataCallback(
