@@ -47,25 +47,34 @@ footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
 <div class="wrap">
   <p class="crumb"><a href="index.html">← SoundRoute</a></p>
   <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: April 28, 2026</p>
+  <p class="updated">Last updated: May 17, 2026</p>
 
-  <p>SoundRoute is built so the answer to "what data do you collect?" can be a single word: <strong>none</strong>. This page describes that in more detail.</p>
+  <p>SoundRoute is built so the answer to "what data do we collect?" is essentially nothing. The app runs entirely on your Mac with no analytics, no telemetry, no user accounts, and no servers we operate. The only network activity is Apple's StoreKit framework handling the optional in-app purchase (described below). This page covers what does and doesn't happen with your data.</p>
 
   <h2>What SoundRoute does</h2>
   <p>SoundRoute is a macOS menu bar utility that routes audio from one device on your Mac to another. Audio passes through your computer's CoreAudio system in real time. It is never recorded, written to disk, or transmitted off your computer.</p>
 
   <h2>Data we collect</h2>
-  <p>None. SoundRoute has no analytics, no telemetry, no crash reporting, no advertising, no user accounts, and no servers we operate. The app does not make any network connections.</p>
+  <p>None. SoundRoute has no analytics, no telemetry, no crash reporting, no advertising, no user accounts, and no servers we operate.</p>
+  <p>The app does not make any network connections of its own. Apple's StoreKit framework does make network connections to App Store servers on our behalf to handle the optional in-app purchase — loading the product information, completing transactions, and verifying entitlements. We do not see your payment information, your Apple ID, or any personally identifying data — Apple processes everything and gives our app only a single yes/no answer about whether your account is entitled to the unlock.</p>
 
   <h2>Microphone access</h2>
   <p>macOS will prompt you to grant SoundRoute permission to use the microphone the first time you start audio routing from an input device. This permission is required so that audio from your selected input device can be passed through to your selected output device. The audio is processed only in memory and only for as long as you have routing active. SoundRoute does not record, save, or transmit any audio.</p>
 
+  <h2>In-app purchases</h2>
+  <p>SoundRoute is free to download. The free tier provides up to 30 minutes of audio routing per day; the counter resets at local midnight. An optional one-time in-app purchase, <strong>Unlimited Routing</strong>, removes the daily limit.</p>
+  <p>The purchase is processed entirely by Apple's App Store. We never see your payment method, your Apple ID, your name, or any personally identifying data. Apple provides our app only with a boolean (yes/no) indicating whether your account currently owns the unlock. That boolean is cached on your Mac for fast app launch (see "Data stored on your device" below); the App Store is always the authoritative source.</p>
+  <p>You can restore previous purchases at any time from the right-click menu on the SoundRoute menu bar icon. This re-syncs the entitlement state with Apple. Refunds processed by Apple are observed automatically — usually within seconds via StoreKit's transaction notifications — and the unlock returns to the locked state the next time SoundRoute sees the change.</p>
+
   <h2>Data stored on your device</h2>
-  <p>SoundRoute saves a small amount of preference data on your Mac (using the standard <code>UserDefaults</code> system) so it can remember your choices between launches:</p>
+  <p>SoundRoute saves a small amount of preference and state data on your Mac (using the standard <code>UserDefaults</code> system) so it can remember your choices between launches:</p>
   <ul>
     <li>Which input and output devices you last selected (stored as system-assigned device identifiers)</li>
     <li>Whether you have enabled "Show Dock icon"</li>
     <li>Whether you have enabled "Launch at login"</li>
+    <li>How many seconds of audio routing you have used today (free tier only — used to enforce the 30-minute daily limit)</li>
+    <li>The date of your last daily reset (so the daily counter rolls over correctly at local midnight)</li>
+    <li>A cached copy of whether your Apple ID has purchased Unlimited Routing (for fast app launch; the App Store is the authoritative source)</li>
   </ul>
   <p>This data lives only on your Mac and is never sent anywhere. Removing the app removes this data.</p>
 
