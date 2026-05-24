@@ -42,7 +42,7 @@ daily limit. Buy once; restore on any of your Macs.
 
 ## Privacy
 
-SoundRoute does not record, store, or transmit audio. It does not collect analytics. It does not connect to the internet. It pipes the user-selected input to the user-selected output, locally, and stops the moment you click Stop.
+SoundRoute does not record, store, or transmit audio. It does not collect analytics. The app does not connect to the internet on its own — Apple's StoreKit handles the optional in-app purchase. It pipes the user-selected input to the user-selected output, locally, and stops the moment you click Stop.
 
 Microphone permission is required because macOS treats reading from any CoreAudio input device as microphone access — even if the input is a USB interface or line-in source. That permission is used only to read live audio frames into a small ring buffer that feeds the output device.
 
@@ -55,7 +55,7 @@ Full policy: <https://bscoggins.github.io/SoundRoute/privacy.html>
 
 ## Install
 
-Available on the Mac App Store: *(link will be added once the listing is live)*
+**[Available on the Mac App Store →](https://apps.apple.com/us/app/soundroute/id6764453636)**
 
 ## Build from source
 
@@ -71,7 +71,9 @@ To run on your own machine without a Developer ID, you may need to disable code 
 
 ## How it works
 
-Two CoreAudio HAL Output AudioUnits are created — one configured for input capture, one for output playback. They are bridged by a lock-protected ring buffer (`OSAllocatedUnfairLock`) sized to `kAudioUnitProperty_MaximumFramesPerSlice` (4096 frames). The input unit's render callback writes captured frames into the ring; the output unit's render callback reads from it. Underruns zero-fill, overruns drop the oldest frames.
+Two CoreAudio HAL Output AudioUnits are created — one configured for input capture, one for output playback. Each AudioUnit is configured at its device's nominal sample rate (read via `kAudioDevicePropertyNominalSampleRate`); when input and output devices use different rates, an `AudioConverter` bridges the gap on the output path. A property listener on each device's nominal sample rate triggers automatic reconfiguration if the user changes rate in Audio MIDI Setup.
+
+The two AudioUnits are bridged by a lock-protected ring buffer (`OSAllocatedUnfairLock`) sized to `kAudioUnitProperty_MaximumFramesPerSlice` (4096 frames). The input unit's render callback writes captured frames into the ring; the output unit's render callback reads from it (going through the converter when present). Underruns zero-fill, overruns drop the oldest frames.
 
 Device enumeration uses `AudioObjectGetPropertyData` against `kAudioHardwarePropertyDevices`, with a block-based property listener (`AudioObjectAddPropertyListenerBlock`) on the same property to react to hot-plug events on the main queue.
 
